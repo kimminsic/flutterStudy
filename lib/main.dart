@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:widget/home_screen.dart';
+import 'home_screen.dart';
 
 class Player {
   String? name;
