@@ -5,6 +5,7 @@ import 'package:toolflix/services/api_service.dart';
 import 'package:toolflix/widgets/episode_widget.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:url_launcher/url_launcher_string.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class DetailScreen extends StatefulWidget {
   final String title, thumb, id;
@@ -23,12 +24,43 @@ class DetailScreen extends StatefulWidget {
 class _DetailScreenState extends State<DetailScreen> {
   late Future<WebtoonDetailModel> webtoon;
   late Future<List<WebtoonEpisodeModel>> episodes;
+  late SharedPreferences prefs;
+  bool isLiked = false;
+  Future initPref() async {
+    prefs = await SharedPreferences.getInstance();
+    final likedToons = prefs.getStringList('likedToons');
+    if (likedToons != null) {
+      if (likedToons.contains(widget.id) == true) {
+        setState(() {
+          isLiked = true;    
+        });
+      }
+    } else {
+      await prefs.setStringList('likedToons', []);
+    }
+  }
 
   @override
   void initState() {
     super.initState();
     webtoon = ApiService.getToonById(widget.id);
     episodes = ApiService.getLatestEpisodesById(widget.id);
+    initPrefs();
+  }
+
+  onHeartTap() async {
+    final likedToons = prefs.getStringList('likedToons');
+    if(likedToons != null) {
+      if(isLiked){
+        likedToons.remove(widget.id);
+      } else {
+        likedToons.add(widget.id);
+      }
+      await prefs.setStringList('likedToons', likedToons);
+      setState(() {
+        isLiked = !isLiked;
+      });
+    }
   }
 
   @override
@@ -39,6 +71,14 @@ class _DetailScreenState extends State<DetailScreen> {
         elevation: 2,
         backgroundColor: Colors.white,
         foregroundColor: Colors.green,
+        actions: [
+          IconButton(
+            onPressed: onHeartTap,
+            icon: const Icon(
+              isLiked ? Icons.favorite : Icons.favorite_outline)
+              Icons.favorite_outlined),
+          ),
+        ],
         title: Text(widget.title, style: const TextStyle(fontSize: 24)),
       ),
       body: SingleChildScrollView(
@@ -106,7 +146,7 @@ class _DetailScreenState extends State<DetailScreen> {
                     return Column(
                       children: [
                         for (var episode in snapshot.data!)
-                          Episode(episode: episode, webtoon_id: widget.id),
+                          Episode(episode: episode, webtoonId: widget.id),
                       ],
                     );
                   }
@@ -117,6 +157,6 @@ class _DetailScreenState extends State<DetailScreen> {
           ),
         ),
       ),
-    );
+    )
   }
 }
